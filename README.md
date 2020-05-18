@@ -1,6 +1,6 @@
 # 网易云音乐免费下载MP3，免VIP
 
-本项目针对2020年最新的网易云后台，对所有“vip下载”歌曲如[《我好想你》](https://music.163.com/#/song?id=26524510) 都能免vip下载，下载格式为MP3；尚不能破解“vip试听”的歌曲如[《那些你很冒险的梦》](https://music.163.com/#/song?id=108138) 。
+本项目针对2020年最新的网易云后台，对所有“vip下载”歌曲如<a href="https://music.163.com/#/song?id=26524510" target="_blank">《我好想你》</a> 都能免vip下载，下载格式为MP3；尚不能破解“vip试听”的歌曲如<a href="https://music.163.com/#/song?id=108138" target="_blank">《那些你很冒险的梦》</a>。
 
 ## 项目上传时间
 
@@ -8,7 +8,7 @@
 
 ## 在线演示
 
-网址：https://loveyou.kurochan.top/fake/music163_download
+网址：<a href="https://loveyou.kurochan.top/fake/music163_download" target="_blank">https://loveyou.kurochan.top/fake/music163_download</a>
 
 初次进入需授权码：miku_love_you_1314
 
