@@ -9,9 +9,11 @@ import net.sf.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,9 +37,15 @@ public class Music163Utils {
     public static final String SONGS_DETAIL_API = "http://music.163.com/api/song/detail/";
 
     /**
-     * 歌曲搜索api
+     * 歌曲搜索api，首选
      */
-    public static final String MUSIC_SEARCH_API = "https://v1.alapi.cn/api/music/search";
+    public static final String MUSIC_SEARCH_API_0 = "https://v1.alapi.cn/api/music/search";
+
+    /**
+     * 歌曲搜索api，备选
+     */
+    public static final String MUSIC_SEARCH_API_1 = "https://music.jeeas.cn/v1/search";
+
 
     /**
      * 根据歌曲id获得对应mp3下载外链
@@ -74,15 +82,27 @@ public class Music163Utils {
     }
 
     /**
-     * 获得搜索音乐的api
+     * 获得搜索音乐的api，，首选
      *
      * @param myPage  分页{页号，每页数量}
      * @param keyword 查询关键字
      * @return
      */
-    public static String getMusicSearchApi(MyPage myPage, String keyword) {
+    public static String getMusicSearchApi0(MyPage myPage, String keyword) {
         //keyword:关键字，limit：每页数量，offset：偏移，(页号-1)*每页数量
-        return MUSIC_SEARCH_API + "?keyword=" + keyword + "&limit=" + myPage.getPageSize() + "&offset=" + (myPage.getPageNum() - 1) * myPage.getPageSize();
+        return MUSIC_SEARCH_API_0 + "?keyword=" + keyword + "&limit=" + myPage.getPageSize() + "&offset=" + (myPage.getPageNum() - 1) * myPage.getPageSize();
+    }
+
+    /**
+     * 获得搜索音乐的api，，首选
+     *
+     * @param myPage  分页{页号，每页数量}
+     * @param keyword 查询关键字
+     * @return
+     */
+    public static String getMusicSearchApi1(MyPage myPage, String keyword) throws UnsupportedEncodingException {
+        //keyword:关键字，limit：每页数量，offset：偏移，(页号-1)*每页数量
+        return MUSIC_SEARCH_API_1 + "?s=" + URLEncoder.encode(keyword ,"UTF-8") + "&limit=" + myPage.getPageSize() + "&offset=" + (myPage.getPageNum() - 1) * myPage.getPageSize();
     }
 
     /**
@@ -137,6 +157,17 @@ public class Music163Utils {
      * @return 分页结果
      */
     public static Music163PageInfo getMusicPageInfo(MyPage myPage, String keyword) {
+        //首选方案
+        Music163PageInfo pageInfo0 = getMusicPageInfoSolution0(myPage, keyword);
+        if (pageInfo0 != null) {
+            return pageInfo0;
+        }
+
+        //备选方案
+        return getMusicPageInfoSolution1(myPage, keyword);
+    }
+
+    public static Music163PageInfo getMusicPageInfoSolution0(MyPage myPage, String keyword) {
         Music163PageInfo music163PageInfo = new Music163PageInfo();
         music163PageInfo.setPageNum(myPage.getPageNum());
         music163PageInfo.setPageSize(myPage.getPageSize());
@@ -150,7 +181,7 @@ public class Music163Utils {
         StringBuffer sb = new StringBuffer();
 
         try {
-            url = new URL(getMusicSearchApi(myPage, keyword));
+            url = new URL(getMusicSearchApi0(myPage, keyword));
             connection = url.openConnection();
             bf = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
             String line = "";
@@ -175,10 +206,61 @@ public class Music163Utils {
                 JSONObject album = song.getJSONObject("album");
                 music163.setAlbum((String) album.get("name"));
                 music163.setMp3Url(getOuterMp3Url(music163.getId()));
+
                 music163List.add(music163);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            return null;
+        }
+        music163PageInfo.setTotal(count);
+        music163PageInfo.setMusicList(music163List);
+
+        return music163PageInfo;
+    }
+
+    public static Music163PageInfo getMusicPageInfoSolution1(MyPage myPage, String keyword) {
+        Music163PageInfo music163PageInfo = new Music163PageInfo();
+        music163PageInfo.setPageNum(myPage.getPageNum());
+        music163PageInfo.setPageSize(myPage.getPageSize());
+        List<Music163> music163List = new ArrayList<>();
+        int count = 0;
+
+
+        URLConnection connection;
+        URL url;
+        BufferedReader bf;
+        StringBuffer sb = new StringBuffer();
+
+        try {
+            url = new URL(getMusicSearchApi1(myPage, keyword));
+            connection = url.openConnection();
+            bf = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
+            String line = "";
+            while (null != (line = bf.readLine())) {
+                sb.append(line);
+            }
+
+            JSONObject jsonObject = JSONObject.fromObject(sb.toString());
+            JSONObject data = jsonObject.getJSONObject("result");
+            count = (int) data.get("songCount");
+            JSONArray songs = data.getJSONArray("songs");
+            for (int i = 0; i < songs.size(); i++) {
+                JSONObject song = songs.getJSONObject(i);
+                Music163 music163 = new Music163();
+                music163.setId((Integer) song.get("id"));
+                music163.setName((String) song.get("name"));
+                JSONArray artists = song.getJSONArray("ar");
+                for (int j = 0; j < artists.size(); j++) {
+                    JSONObject artist = artists.getJSONObject(j);
+                    music163.addArtist((String) artist.get("name"));
+                }
+                JSONObject album = song.getJSONObject("al");
+                music163.setAlbum((String) album.get("name"));
+                music163.setMp3Url(getOuterMp3Url(music163.getId()));
+
+                music163List.add(music163);
+            }
+        } catch (Exception e) {
             return null;
         }
         music163PageInfo.setTotal(count);
@@ -202,5 +284,10 @@ public class Music163Utils {
     public static void downloadMusic(Integer id, String saveDirectory, String fileName) throws Exception {
         String url = getOuterMp3Url(id);
         FileUtils.downloadFile(url, saveDirectory, fileName);
+    }
+
+
+    public static void main(String[] args) throws Exception {
+        Music163Utils.downloadMusic(1308436740, "C:\\Users\\92970\\Desktop\\");
     }
 }
