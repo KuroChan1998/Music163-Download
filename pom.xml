@@ -14,7 +14,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Common util -->
-        <project.build.commons.io.version>2.4</project.build.commons.io.version>
+        <project.build.commons.io.version>2.7</project.build.commons.io.version>
         <project.build.commons.lang3.version>3.3.2</project.build.commons.lang3.version>
         <!-- Jackson -->
         <net.sf.json-lib.version>2.4</net.sf.json-lib.version>
